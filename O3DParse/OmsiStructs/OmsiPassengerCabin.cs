@@ -31,110 +31,110 @@ public class OmsiPassengerCabin
 }
 
 [OmsiIniCommand("entry")]
-public struct EntryCommand
+public class EntryCommand
 {
     public int pathPoint;
 
     public NoTicketSaleCommand? noTicketSale;
     public WithButtonCommand? withButton;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("{noticketsale}")]
 [OmsiIniVerbatimCommand]
 public struct NoTicketSaleCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("{withbutton}")]
 [OmsiIniVerbatimCommand]
 public struct WithButtonCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("exit")]
-public struct ExitCommand
+public class ExitCommand
 {
     public int pathPoint;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("linkToNextVeh")]
-public struct LinkToNextVehCommand
+public class LinkToNextVehCommand
 {
     public int pathPoint;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("linkToPrevVeh")]
-public struct LinkToPrevVehCommand
+public class LinkToPrevVehCommand
 {
     public int pathPoint;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("stamper")]
-public struct StamperCommand
+public class StamperCommand
 {
     public int pathPoint;
     public Vector3 pos;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("ticket_sale")]
-public struct TicketSaleCommand
+public class TicketSaleCommand
 {
     public int pathPoint;
     public Vector3 pos;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("ticket_sale_money_point")]
-public struct TicketSaleMoneyPointCommand
+public class TicketSaleMoneyPointCommand
 {
     public Vector3 moneyPos;
     public Vector2 variation;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("ticket_sale_money_point_2")]
 [OmsiIniDerivedCommand<TicketSaleMoneyPointCommand>]
-public struct TicketSaleMoneyPoint2Command
+public class TicketSaleMoneyPoint2Command
 {
     public Vector3 moneyPos;
     public Vector2 variation;
-    public string parent;
+    public string? parent;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("ticket_sale_change_point")]
-public struct TicketSaleChangePointCommand
+public class TicketSaleChangePointCommand
 {
     public Vector3 moneyPos;
     public Vector2 variation;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("ticket_sale_change_point_2")]
 [OmsiIniDerivedCommand<TicketSaleChangePointCommand>]
-public struct TicketSaleChangePoint2Command
+public class TicketSaleChangePoint2Command
 {
     public Vector3 moneyPos;
     public Vector2 variation;
-    public string parent;
+    public string? parent;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("___seat")]

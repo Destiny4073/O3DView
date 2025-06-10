@@ -65,83 +65,65 @@ public class OmsiComplMapObj : OmsiCFGFile
 }
 
 [OmsiIniCommand("scriptshare")]
-public struct ScriptShareCommand
+public class ScriptShareCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("varnamelist")]
-public struct VarNameListCommand
+public class VarNameListCommand
 {
-    public string[] paths;
+    public string[] paths = [];
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("stringvarnamelist")]
-public struct StringVarNameListCommand
+public class StringVarNameListCommand
 {
-    public string[] paths;
+    public string[] paths = [];
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("script")]
-public struct ScriptCommand
+public class ScriptCommand
 {
-    public string[] paths;
+    public string[] paths = [];
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("constfile")]
-public struct ConstFileCommand
+public class ConstFileCommand
 {
-    public string[] paths;
+    public string[] paths = [];
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [Serializable]
 [OmsiIniCommand("sound")]
-public struct SoundCommand
+public class SoundCommand
 {
-    public string path; // TODO:
+    public string path = string.Empty; // TODO:
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [Serializable]
 [OmsiIniCommand("sound_ai")]
-public struct SoundAICommand
+public class SoundAICommand
 {
-    public string path; // TODO:
+    public string path = string.Empty; // TODO:
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
-/*[Serializable]
-[OmsiIniCommand("paths")]
-public struct PathsCommand
-{
-    public string path; // TODO:
-
-    [OmsiIniComments] public string comments;
-}*/
-
-/*[Serializable]
-[OmsiIniCommand("passengercabin")]
-public struct PassengerCabinCommand
-{
-    public string path; // TODO:
-
-    [OmsiIniComments] public string comments;
-}*/
-
 [OmsiIniCommand("onlyeditor")]
-public struct OnlyEditorCommand
+public class OnlyEditorCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum OmsiComplexity
@@ -153,17 +135,17 @@ public enum OmsiComplexity
 }
 
 [OmsiIniCommand("complexity")]
-public struct ComplexityCommand
+public class ComplexityCommand
 {
     public OmsiComplexity complexity;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("absheight")]
-public struct AbsHeightCommand
+public class AbsHeightCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum OmsiRenderPriority
@@ -179,9 +161,9 @@ public enum OmsiRenderPriority
 
 public class OmsiRenderTypeSerializer : IOmsiIniCommandCustomSerializer
 {
-    public void Deserialize(ref object target, Type targetType, IniFileReader reader, ref int lineNumber, object? parent)
+    public void Deserialize(ref object target, Type targetType, string command, IniFileReader reader, ref int lineNumber, object? parent)
     {
-        RenderTypeCommand renderType = default;
+        RenderTypeCommand renderType = (target as RenderTypeCommand) ?? new();
         Span<char> line = stackalloc char[256];
         var read = reader.ReadLine(line);
         if (read < 0)
@@ -229,109 +211,109 @@ public class OmsiRenderTypeSerializer : IOmsiIniCommandCustomSerializer
 
 [OmsiIniCommand("rendertype")]
 [OmsiIniCommandSerializer<OmsiRenderTypeSerializer>]
-public struct RenderTypeCommand
+public class RenderTypeCommand
 {
     public OmsiRenderPriority priority;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("crossing_heightdeformation")]
-public struct CrossingHeightDeformationCommand
+public class CrossingHeightDeformationCommand
 {
-    public string path;
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("busstop")]
-public struct BusStopCommand
+public class BusStopCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("entrypoint")]
-public struct EntryPointCommand
+public class EntryPointCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("carpark_p")]
-public struct CarParkPCommand
+public class CarParkPCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("trafficlight")]
-public struct TrafficLightCommand
+public class TrafficLightCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("signal")]
-public struct SignalCommand
+public class SignalCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("switch")]
-public struct SwitchCommand
+public class SwitchCommand
 {
     public int switchInd;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("helparrow")]
-public struct HelpArrowCommand
+public class HelpArrowCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("depot")]
-public struct DepotCommand
+public class DepotCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("petrolstation")]
-public struct PetrolStationCommand
+public class PetrolStationCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("tree")]
-public struct TreeCommand
+public class TreeCommand
 {
-    public string texture;
+    public string texture = string.Empty;
     public float minHeight;
     public float maxHeight;
     public float minRatio;
     public float maxRatio;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("friendlyname")]
-public struct FriendlyNameCommand
+public class FriendlyNameCommand
 {
-    public string name;
+    public string name = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("groups")]
-public struct GroupsCommand
+public class GroupsCommand
 {
-    public string[] groups;
+    public string[] groups = [];
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("LightMapMapping")]
-public struct LightMapMappingCommand
+public class LightMapMappingCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum OmsiNightMapMode
@@ -344,27 +326,27 @@ public enum OmsiNightMapMode
 }
 
 [OmsiIniCommand("NightMapMode")]
-public struct NightMapModeCommand
+public class NightMapModeCommand
 {
     public OmsiNightMapMode mode;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("splinehelper")]
-public struct SplineHelperCommand
+public class SplineHelperCommand
 {
-    public string path;
+    public string path = string.Empty;
     public Vector3 position;
     public float heading;
     public float pitch;
     public float cant;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("add_camera_reflexion")]
-public struct AddCameraReflectionCommand
+public class AddCameraReflectionCommand
 {
     public Vector3 position;
     public float orbitDistance;
@@ -372,12 +354,12 @@ public struct AddCameraReflectionCommand
     public float pitch;
     public float yaw;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("add_camera_reflexion_2")]
 [OmsiIniDerivedCommand<AddCameraReflectionCommand>]
-public struct AddCameraReflection2Command
+public class AddCameraReflection2Command
 {
     public Vector3 position;
     public float orbitDistance;
@@ -386,101 +368,101 @@ public struct AddCameraReflection2Command
     public float yaw;
     public float renderDistance;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 #region Physics Commands
 [OmsiIniCommand("mass")]
-public struct MassCommand
+public class MassCommand
 {
     public float mass;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("momentofintertia")]
-public struct MomentOfInertiaCommand
+public class MomentOfInertiaCommand
 {
     public Vector3 moment;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("cog")]
-public struct CogCommand
+public class CogCommand
 {
     public Vector3 cog;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("boundingbox")]
-public struct BoundingBoxCommand
+public class BoundingBoxCommand
 {
     public Vector3 size;
     public Vector3 centre;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("collision_mesh")]
-public struct CollisionMeshCommand
+public class CollisionMeshCommand
 {
-    public string path;
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("nocollision")]
-public struct NoCollisionCommand
+public class NoCollisionCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("fixed")]
-public struct FixedCommand
+public class FixedCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("crashmode_pole")]
-public struct CrashModePoleCommmand
+public class CrashModePoleCommmand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("surface")]
-public struct SurfaceCommmand
+public class SurfaceCommmand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 #endregion
 
 [OmsiIniCommand("new_attachment")]
-public struct NewAttachementCommmand
+public class NewAttachementCommmand
 {
     // TODO: Implement this command's sub commands
     //  - attach_trans
     //  - attach_rot_x
     //  - attach_rot_y
     //  - attach_rot_z
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("maplight")]
-public struct MapLightCommmand
+public class MapLightCommmand
 {
     public Vector3 pos;
     public Vector3 colour;
     public float radius;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("nomaplighting")]
-public struct NoMapLightingCommmand
+public class NoMapLightingCommmand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 #region Path Commands
@@ -514,7 +496,7 @@ public enum OmsiPathTrafficLights
 }
 
 [OmsiIniCommand("path")]
-public struct PathCommand
+public class PathCommand
 {
     public Vector3 pos;
     public float heading;
@@ -534,12 +516,12 @@ public struct PathCommand
     public RailEnhCommand? rail;
     public ThirdRailCommand[]? thirdRails;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("path_2")]
 [OmsiIniDerivedCommand<PathCommand>]
-public struct PathCommand2
+public class PathCommand2
 {
     public Vector3 pos;
     public float heading;
@@ -561,42 +543,42 @@ public struct PathCommand2
     public RailEnhCommand? rail;
     public ThirdRailCommand[]? thirdRails;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("use_traffic_light")]
-public struct UseTrafficLightCommand
+public class UseTrafficLightCommand
 {
     public int index;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("switchdir")]
-public struct SwitchDirCommand
+public class SwitchDirCommand
 {
     public byte direction;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("crossingproblem")]
-public struct CrossingProblemCommand
+public class CrossingProblemCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("blockpath")]
-public struct BlockPathCommand
+public class BlockPathCommand
 {
     public int blockedPath;
     public byte param;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("rail_enh")]
-public struct RailEnhCommand
+public class RailEnhCommand
 {
     public float length;
     public int thrusts;
@@ -607,11 +589,11 @@ public struct RailEnhCommand
     public float trackDistortionAmplitudeZ;
     public float trackDistortionPotZ;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("third_rail")]
-public struct ThirdRailCommand
+public class ThirdRailCommand
 {
     public float posX;
     public float posZ;
@@ -620,12 +602,12 @@ public struct ThirdRailCommand
     public float frequency;
     public float sigA;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 #region Traffic Light Commands
 [OmsiIniCommand("traffic_lights_group")]
-public struct TrafficLightsGroupCommand
+public class TrafficLightsGroupCommand
 {
     public float cycleDuration;
 
@@ -633,7 +615,7 @@ public struct TrafficLightsGroupCommand
     public TrafficLightStopCommand[]? stops;
     public TrafficLightJumpCommand[]? jumps;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("traffic_light")]
@@ -648,7 +630,7 @@ public struct TrafficLightDefCommand
     public PhaseCommand[]? phases;
     public ApproachDistCommand? approachDist;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum OmsiTrafficLightPhase : byte
@@ -674,7 +656,7 @@ public struct PhaseCommand
     public OmsiTrafficLightPhase phase;
     public float time;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("approachdist")]
@@ -682,7 +664,7 @@ public struct ApproachDistCommand
 {
     public float approachDist;// = 10;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("traffic_light_stop")]
@@ -692,7 +674,7 @@ public struct TrafficLightStopCommand
     public float time;
     public bool ifNoApproach;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("traffic_light_jump")]
@@ -703,26 +685,26 @@ public struct TrafficLightJumpCommand
     public bool ifNoApproach;
     public float jumpTime;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 #endregion
 #endregion
 
 [OmsiIniCommand("triggerbox_new")]
-public struct TriggerBoxNewCommand
+public class TriggerBoxNewCommand
 {
     public Vector3 size;
     public Vector3 centre;
 
     public TriggerBoxSetReverbCommand? setReverb;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("triggerbox_setreverb")]
-public struct TriggerBoxSetReverbCommand
+public class TriggerBoxSetReverbCommand
 {
     public float time;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }

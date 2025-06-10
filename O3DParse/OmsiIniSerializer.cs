@@ -1,4 +1,5 @@
-﻿using System;
+﻿using O3DParse.Ini;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -32,10 +33,10 @@ namespace O3DParse
 
         /// <inheritdoc cref="OmsiIniSerializer{T}.Serialize(T, Stream, bool)"/>
         /// <typeparam name="T">A serializable type annotated appropriately with <see cref="OmsiIniCommandAttribute"/> attributes.</typeparam>
-        public static void SerializeIniFile<T>(T obj, Stream stream, bool leaveOpen = true) where T : new()
+        public static void SerializeIniFile<T>(T obj, Stream stream, bool leaveOpen = true, bool skipComments = false) where T : new()
         {
             var serializer = new OmsiIniSerializer<T>();
-            serializer.Serialize(obj, stream, leaveOpen);
+            serializer.Serialize(obj, stream, leaveOpen, skipComments);
         }
     }
 
@@ -153,7 +154,7 @@ namespace O3DParse
                 if (commandItem.customSerializer is IOmsiIniCommandCustomSerializer customSerializer)
                 {
                     object? parent = parents.Count > 0 ? parents.Peek().obj : null;
-                    customSerializer.Deserialize(ref commandObj, commandItem.type!, reader, ref lineNumber, parent);
+                    customSerializer.Deserialize(ref commandObj, commandItem.type!, commandItem.command!, reader, ref lineNumber, parent);
                 }
                 else
                 {
@@ -167,28 +168,31 @@ namespace O3DParse
                             if (fieldVal is not string npath)
                                 throw new OmsiIniSerializationException($"OmsiIniCommandFile must be a string!", field, commandItem.type!, lineNumber);
 
-#if DEBUG
+#if false && DEBUG
                             // Fail silently in debug builds
                             try
                             {
 #endif
                                 npath = Path.Combine(Path.GetDirectoryName(filepath) ?? "", npath);
-                                using var fs = File.OpenRead(npath);
+                                if (File.Exists(npath))
+                                {
+                                    using var fs = File.OpenRead(npath);
 
-                                var deserializer = typeof(OmsiIniSerializer).GetMethod(nameof(OmsiIniSerializer.DeserializeIniFile))?.MakeGenericMethod(commandItem.type!);
-                                if (deserializer == null)
-                                    throw new OmsiIniSerializationException($"Couldn't construct deserializer for {field.FieldType}!", field, commandItem.type!, lineNumber);
+                                    var deserializer = typeof(OmsiIniSerializer).GetMethod(nameof(OmsiIniSerializer.DeserializeIniFile))?.MakeGenericMethod(commandItem.type!);
+                                    if (deserializer == null)
+                                        throw new OmsiIniSerializationException($"Couldn't construct deserializer for {field.FieldType}!", field, commandItem.type!, lineNumber);
 
-                                // WARNING: If the method signature of DeserializeIniFile changes, this will fail at runtime!
-                                commandObj = deserializer.Invoke(null, [fs, true, recursive, npath
+                                    // WARNING: If the method signature of DeserializeIniFile changes, this will fail at runtime!
+                                    commandObj = deserializer.Invoke(null, [fs, true, recursive, npath
 #if DEBUG
-                                , unparsedCommands
+                                    , unparsedCommands
 #endif
-                                ])!;
+                                    ])!;
 
-                                // Reset the path which has now been discarded
-                                field.SetValue(commandObj, fieldVal);
-#if DEBUG
+                                    // Reset the path which has now been discarded
+                                    field.SetValue(commandObj, fieldVal);
+                                }
+#if false && DEBUG
                             }
                             catch { }
 #endif
@@ -607,7 +611,8 @@ namespace O3DParse
         /// <param name="obj">The object to serialize.</param>
         /// <param name="stream">A writable stream to serialize the object into.</param>
         /// <param name="leaveOpen">Whether the stream should be closed automatically when this method exits.</param>
-        public void Serialize(T obj, Stream stream, bool leaveOpen = true)
+        /// <param name="skipComments">Skips serializing comments.</param>
+        public void Serialize(T obj, Stream stream, bool leaveOpen = true, bool skipComments = false)
         {
             using TextWriter writer = new StreamWriter(stream, leaveOpen: leaveOpen);
             lineNumber = 0;
@@ -622,16 +627,17 @@ namespace O3DParse
 
             var commandItem = commandTreeRoot;
             var commandObj = obj;
-            SerializeCommand(writer, commandItem, commandObj, null);
+            SerializeCommand(writer, commandItem, commandObj, null, skipComments);
         }
 
-        private void SerializeCommand(TextWriter writer, CommandItem commandItem, object? commandObj, object? parent)
+        private void SerializeCommand(TextWriter writer, CommandItem commandItem, object? commandObj, object? parent, bool skipComments)
         {
             if (commandObj == null)
                 return;
 
             // Write any pre-comments
-            if (commandItem.commentField is FieldInfo commentsField
+            if (!skipComments
+                && commandItem.commentField is FieldInfo commentsField
                 && commentsField.GetValue(commandObj) is string comments)
             {
                 writer.Write(comments);
@@ -715,17 +721,18 @@ namespace O3DParse
                     if (child.isArray && childObj is Array childArray)
                     {
                         foreach (var v in childArray)
-                            SerializeCommand(writer, child, v, commandObj);
+                            SerializeCommand(writer, child, v, commandObj, skipComments);
                     }
                     else
                     {
-                        SerializeCommand(writer, child, childObj, commandObj);
+                        SerializeCommand(writer, child, childObj, commandObj, skipComments);
                     }
                 }
             }
 
             // Write any post-comments
-            if (commandItem.postCommentField is FieldInfo postCommentField
+            if (!skipComments 
+                && commandItem.postCommentField is FieldInfo postCommentField
                 && postCommentField.GetValue(commandObj) is string postComments)
             {
                 writer.Write(postComments);
@@ -739,9 +746,21 @@ namespace O3DParse
                 writer.WriteLine(valBool ? (byte)1 : (byte)0);
                 lineNumber++;
             }
-            else if (ftype.IsPrimitive || ftype.Equals(typeof(string)) || ftype.Equals(typeof(decimal)))
+            else if (ftype.IsPrimitive || ftype.Equals(typeof(decimal)))
             {
                 writer.WriteLine(val);
+                lineNumber++;
+            } 
+            else if (ftype.Equals(typeof(string)))
+            {
+                // Not sure exactly why I need to do this, but I do...
+                if (val is string s)
+                    if(s.EndsWith(Environment.NewLine))
+                        writer.Write(s);
+                    else if (s.EndsWith('\n') || s.EndsWith('\r'))
+                        writer.WriteLine(s.AsSpan()[..^1]);
+                else
+                    writer.WriteLine(val);
                 lineNumber++;
             }
             else if (ftype.IsEnum)
@@ -958,8 +977,8 @@ namespace O3DParse
                 var fdata = fieldAttributes[x];
                 return fdata.tCommand == null
                     && fdata.comments == null
-                    && fdata.skip == null
-                    && simpleFieldNames.Add(x.Name);
+                    && simpleFieldNames.Add(x.Name)
+                    && fdata.skip == null;
                 })
                 .ToArray();
             if (cmd.storageType != cmd.type)
@@ -1019,10 +1038,11 @@ namespace O3DParse
         /// </summary>
         /// <param name="target">The object to populate with deserialized data.</param>
         /// <param name="targetType">The type of the target object.</param>
+        /// <param name="command">The command that is to be deserialized.</param>
         /// <param name="reader">The instance of the text reader for the ini file.</param>
         /// <param name="lineNumber">The current line number in the ini file.</param>
         /// <param name="parent">The object that the target object belongs to or null for root objects.</param>
-        public void Deserialize(ref object target, Type targetType, IniFileReader reader, ref int lineNumber, object? parent);
+        public void Deserialize(ref object target, Type targetType, string command, IniFileReader reader, ref int lineNumber, object? parent);
         /// <summary>
         /// Implements serialization of a single command. This should serialize the command name and all the needed fields of 
         /// command, writing them to the text writer.
@@ -1033,6 +1053,169 @@ namespace O3DParse
         /// <param name="writer">The instance of the text writer for the ini file.</param>
         /// <param name="parent">The parent object of the object to serialize or null for root objects.</param>
         public void Serialize(object? obj, Type objType, string? commandName, TextWriter writer, object? parent);
+
+        /// <summary>
+        /// Reads a generic field from an IniFileReader using the built in deserializer. Only supports primitive types, enums, and strings.
+        /// </summary>
+        /// <param name="type">The type of the field to deserialize.</param>
+        /// <param name="targetType">The type of the object the field belongs too.</param>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        static object ReadField(Type type, Type targetType, IniFileReader reader, ref int lineNumber)
+        {
+            return OmsiIniSerializer<object>.DeserializeSimpleType(reader, type, ref lineNumber, null, targetType);
+        }
+
+        /// <summary>
+        /// Reads a string from an IniFileReader.
+        /// </summary>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        internal static string ReadString(IniFileReader reader, ref int lineNumber)
+        {
+            Span<char> line = stackalloc char[256];
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
+            lineNumber++;
+            return new(line[..read]);
+        }
+
+        /// <summary>
+        /// Reads an integer from an IniFileReader.
+        /// </summary>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        internal static int ReadInt(IniFileReader reader, ref int lineNumber)
+        {
+            Span<char> line = stackalloc char[256];
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
+            line = line[..read];
+
+            if (!int.TryParse(line, out int val))
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as an int!", null, null, lineNumber);
+
+            lineNumber++;
+            return val;
+        }
+
+        /// <summary>
+        /// Reads an unsigned integer from an IniFileReader.
+        /// </summary>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        internal static uint ReadUInt(IniFileReader reader, ref int lineNumber)
+        {
+            Span<char> line = stackalloc char[256];
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
+            line = line[..read];
+
+            if (!uint.TryParse(line, out uint val))
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a uint!", null, null, lineNumber);
+
+            lineNumber++;
+            return val;
+        }
+
+        /// <summary>
+        /// Reads a byte from an IniFileReader.
+        /// </summary>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        internal static byte ReadByte(IniFileReader reader, ref int lineNumber)
+        {
+            Span<char> line = stackalloc char[256];
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
+            line = line[..read];
+
+            if (!byte.TryParse(line, out byte val))
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a byte!", null, null, lineNumber);
+
+            lineNumber++;
+            return val;
+        }
+
+        /// <summary>
+        /// Reads a float from an IniFileReader.
+        /// </summary>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        internal static float ReadFloat(IniFileReader reader, ref int lineNumber)
+        {
+            Span<char> line = stackalloc char[256];
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
+            line = line[..read];
+
+            if (!float.TryParse(line, out float val))
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a float!", null, null, lineNumber);
+
+            lineNumber++;
+            return val;
+        }
+
+        /// <summary>
+        /// Reads a boolean from an IniFileReader.
+        /// </summary>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <param name="truthVal">The string representing the 'true' value</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        internal static bool ReadBool(ReadOnlySpan<char> truthVal, IniFileReader reader, ref int lineNumber)
+        {
+            Span<char> line = stackalloc char[256];
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
+            line = line[..read];
+
+            lineNumber++;
+            return line.SequenceEqual(truthVal);
+        }
+
+        /// <summary>
+        /// Reads a boolean from an IniFileReader. Where '1' is true and any other value is false.
+        /// </summary>
+        /// <param name="reader">The IniFileReader instance.</param>
+        /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
+        /// <returns>The deserialized value.</returns>
+        /// <exception cref="OmsiIniSerializationException"></exception>
+        internal static bool ReadBool(IniFileReader reader, ref int lineNumber)
+        {
+            return ReadBool("1", reader, ref lineNumber);
+        }
     }
 
     /// <summary>

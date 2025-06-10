@@ -56,12 +56,12 @@ public struct DescriptionCommand
 {
     public string description;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public class OmsiDescriptionSerializer : IOmsiIniCommandCustomSerializer
 {
-    public void Deserialize(ref object target, Type targetType, IniFileReader reader, ref int lineNumber, object? parent)
+    public void Deserialize(ref object target, Type targetType, string command, IniFileReader reader, ref int lineNumber, object? parent)
     {
         DescriptionCommand dst = default;
 
@@ -116,7 +116,7 @@ public struct TypeCommand
 {
     public VehicleType type;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("friendlyname")]
@@ -127,7 +127,7 @@ public struct VehFriendlyNameCommand
     public string friendlyName;
     public string stdColourScheme;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("friendlyname_inv")]
@@ -137,7 +137,7 @@ public struct VehFriendlyNameInvCommand
     public string friendlyName;
     public string stdColourScheme;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum AiVehType : byte
@@ -153,7 +153,7 @@ public struct AiVehTypeCommand
 {
     public AiVehType type;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("coupling_back")]
@@ -161,7 +161,7 @@ public struct CouplingBackCommand
 {
     public Vector3 pos;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("coupling_front")]
@@ -169,7 +169,7 @@ public struct CouplingFrontCommand
 {
     public Vector3 pos;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("control_cable_front")]
@@ -181,7 +181,7 @@ public struct ControlCableFrontCommand
     public string writeVar;
     public string couplingVar;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("control_cable_back")]
@@ -193,7 +193,7 @@ public struct ControlCableBackCommand
     public string writeVar;
     public string couplingVar;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("couple_back")]
@@ -202,7 +202,7 @@ public class CoupleBackCommand : OmsiRoadVehicle
     [OmsiIniCommandFile] public new string path = "";
     public string reverse = "false"; // This should be a bool...
 
-    //[OmsiIniComments] public string comments;
+    //[OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("couple_front")]
@@ -211,7 +211,7 @@ public class CoupleFrontCommand : OmsiRoadVehicle
     [OmsiIniCommandFile] public new string path = "";
     public string reverse = "false"; // This should be a bool...
 
-    //[OmsiIniComments] public string comments;
+    //[OmsiIniComments] public string? comments;
 }
 
 public enum CouplingType : byte
@@ -228,7 +228,7 @@ public struct CouplingFrontCharacterCommand
     public float maxBeta;
     public CouplingType type;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("boogies")]
@@ -236,7 +236,7 @@ public struct BogiesCommand
 {
     public float y1;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("sinus")]
@@ -247,7 +247,7 @@ public struct SinusCommand
     public float wheelTapering;
     public float damping;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("rail_body_osc")]
@@ -261,7 +261,7 @@ public struct RailBodyOscCommand
     public float oscTransFreqZ;
     public float oscTransDampZ;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum ContactShoeBogie : byte
@@ -289,7 +289,7 @@ public struct ContactShoeCommand
     public float zMax;
     public ContactShoeType type;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("rowdy_factor")]
@@ -298,7 +298,7 @@ public struct RowdyFactorCommand
     public float min;
     public float max;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("ai_brakeperformance")]
@@ -310,7 +310,7 @@ public struct AiBrakePerformanceCommand
     public float finalBrakeStrength;
     public float stopPointOffset;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("add_camera_driver")]
@@ -324,7 +324,7 @@ public struct CameraDriverCommand
     public ViewScheduleCommand? viewSchedule;
     public ViewTicketSellingCommand? viewTicketSelling;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("add_camera_pax")]
@@ -335,19 +335,19 @@ public struct CameraPaxCommand
     public float fov;
     public Vector2 rotation;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("view_schedule")]
 public struct ViewScheduleCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("view_ticketselling")]
 public struct ViewTicketSellingCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("set_camera_std")]
@@ -355,7 +355,7 @@ public struct SetCameraStdCommand
 {
     public int index;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("set_camera_outside_center")]
@@ -363,7 +363,7 @@ public struct SetCameraOutsideCenterCommand
 {
     public Vector3 pos;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -374,7 +374,7 @@ public struct SchwerpunktCommand
 {
     public float height;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -385,7 +385,7 @@ public struct RollwiderstandCommand
 {
     public float resistance;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("rot_pnt_long")]
@@ -393,7 +393,7 @@ public struct RotPointLongCommand
 {
     public float longitude;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("inv_min_turnradius")]
@@ -401,7 +401,7 @@ public struct InvMinTurnRadiusCommand
 {
     public float invRadius;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("ai_deltaheight")]
@@ -409,7 +409,7 @@ public struct AiDeltaHeightCommand
 {
     public float height;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -428,7 +428,7 @@ public struct AchseCommand
     public AchseAntriebCommand? antrieb;
     public AchseInertiaInvCommand? inertiaInv;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -440,7 +440,7 @@ public struct AchseLongCommand
 {
     public float pos;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -452,7 +452,7 @@ public struct AchseMaxWidthCommand
 {
     public float width;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -464,7 +464,7 @@ public struct AchseMinWidthCommand
 {
     public float width;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -476,7 +476,7 @@ public struct AchseRaddurMesserCommand
 {
     public float diameter;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -488,7 +488,7 @@ public struct AchseFederCommand
 {
     public float springConst;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -500,7 +500,7 @@ public struct AchseMaxForceCommand
 {
     public float load;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -512,7 +512,7 @@ public struct AchseDaempferCommand
 {
     public float damping;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -524,7 +524,7 @@ public struct AchseAntriebCommand
 {
     public bool driven;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 /// <summary>
@@ -536,7 +536,7 @@ public struct AchseInertiaInvCommand
 {
     public float inertia;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("number")]
@@ -544,7 +544,7 @@ public struct NumberCommand
 {
     public string path;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("registration_automatic")]
@@ -553,7 +553,7 @@ public struct RegistrationAutomaticCommand
     public string registrationPrefix;
     public string registrationPostfix;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("registration_list")]
@@ -561,13 +561,13 @@ public struct RegistrationListCommand
 {
     public string path;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("registration_free")]
 public struct RegistrationFreeCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("kmcounter_init")]
@@ -576,5 +576,5 @@ public struct KmCounterInitCommand
     public int startYear;
     public int kmPerYear;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }

@@ -4,22 +4,27 @@ using System.Runtime.Intrinsics;
 
 namespace O3DView
 {
-    public struct Transform
+    public class Transform
     {
-        public readonly Matrix4x4 Matrix => matrix;
+        public Matrix4x4 Matrix => matrix;
         public Vector3 Pos
         {
-            readonly get => pos;
+            get => pos;
             set
             {
                 pos = value;
-                matrix = matrix.SetTranslation(pos);
-                TransformChanged?.Invoke(this);
+                if (parent == null)
+                {
+                    matrix = matrix.SetTranslation(pos);
+                    TransformChanged?.Invoke(this);
+                }
+                else
+                    UpdateMatrix();
             }
         }
         public Vector3 EulerRot
         {
-            readonly get
+            get
             {
                 Vector3 ret;
 
@@ -59,7 +64,7 @@ namespace O3DView
         }
         public Quaternion Rot
         {
-            readonly get => rot;
+            get => rot;
             set
             {
                 rot = value;
@@ -68,18 +73,37 @@ namespace O3DView
         }
         public float Scale
         {
-            readonly get => scale;
+            get => scale;
             set
             {
                 scale = value;
                 UpdateMatrix();
             }
         }
+        public Transform? Parent
+        {
+            get => parent;
+            set
+            {
+                if (parent != null)
+                    parent.TransformChanged -= Parent_TransformChanged;
+                if (value != null)
+                    value.TransformChanged += Parent_TransformChanged;
+                parent = value;
+                UpdateMatrix();
+            }
+        }
+
+        private void Parent_TransformChanged(Transform obj)
+        {
+            UpdateMatrix();
+        }
 
         private Matrix4x4 matrix;
         private Vector3 pos;
         private Quaternion rot;
         private float scale;
+        private Transform? parent;
 
         public event Action<Transform>? TransformChanged;
 
@@ -91,10 +115,20 @@ namespace O3DView
             scale = 1;
         }
 
+        public Transform(Transform other)
+        {
+            matrix = other.matrix;
+            pos = other.pos;
+            rot = other.rot;
+            scale = other.scale;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateMatrix()
         {
             matrix = (Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateScale(scale)).SetTranslation(pos);
+            if (parent != null)
+                matrix = parent.matrix * matrix;
             TransformChanged?.Invoke(this);
         }
 

@@ -47,7 +47,7 @@ namespace O3DView
 
         public bool GetLocation(out int location, string name, bool silentFail)
         {
-            if(uniformLocationCache.TryGetValue(name, out location)) 
+            if (uniformLocationCache.TryGetValue(name, out location))
                 return true;
 
             location = gl.GetUniformLocation(handle, name);
@@ -114,17 +114,11 @@ namespace O3DView
             try
             {
                 src = File.ReadAllText(path);
-            } catch
+            }
+            catch
             {
                 // If we can't find the shader file locally, try loading it from embedded resources...
-                var assembly = Assembly.GetExecutingAssembly();
-                string? resourceName = assembly.GetManifestResourceNames()
-                    .FirstOrDefault(str => str.EndsWith(Path.GetFileName(path)));
-
-                if(resourceName == null || assembly == null)
-                    throw new FileNotFoundException(path);
-
-                using Stream stream = assembly.GetManifestResourceStream(resourceName) ?? throw new FileNotFoundException(path);
+                using Stream stream = Program.LoadResourceFile(path);
                 using StreamReader reader = new(stream);
                 src = reader.ReadToEnd();
             }

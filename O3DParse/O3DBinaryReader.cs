@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Text;
 
 namespace O3DParse;
@@ -39,8 +40,30 @@ internal class O3DBinaryReader : BinaryReader
     {
         //return base.ReadString();
         int len = ReadByte();
-        Span<byte> buff = stackalloc byte[len];
-        int numRead = BaseStream.ReadAtLeast(buff, len, throwOnEndOfStream: true);
-        return encoding.GetString(buff[..numRead]);
+
+        byte[]? bytes = null;
+        scoped Span<byte> buff;
+        if (len <= 2048)
+            buff = stackalloc byte[len];
+        else
+        {
+            bytes = ArrayPool<byte>.Shared.Rent(len);
+            buff = bytes.AsSpan(0, len);
+        }
+
+        int numRead = 0;
+        while (numRead < len)
+        {
+            int read = BaseStream.Read(buff[numRead..]);
+            numRead += read;
+            if (read == 0)
+                throw new EndOfStreamException();
+        }
+        var ret = encoding.GetString(buff[..numRead]);
+
+        if (bytes != null)
+            ArrayPool<byte>.Shared.Return(bytes);
+
+        return ret;
     }
 }

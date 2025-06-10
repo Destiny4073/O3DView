@@ -36,12 +36,12 @@ public struct PathPntCommand
 {
     public Vector3 position;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public class PathLinkSerializer : IOmsiIniCommandCustomSerializer
 {
-    public void Deserialize(ref object target, Type targetType, IniFileReader reader, ref int lineNumber, object? parent)
+    public void Deserialize(ref object target, Type targetType, string command, IniFileReader reader, ref int lineNumber, object? parent)
     {
         if (parent is not OmsiPaths paths)
             throw new OmsiIniSerializationException($"PathLinkSerializer expected the [pathlink] command to belong to an {nameof(OmsiPaths)}!");
@@ -126,7 +126,7 @@ public struct StepSoundPackCommand
 {
     public string[] soundFiles;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("next_stepsound")]
@@ -134,7 +134,7 @@ public struct NextStepSoundCommand
 {
     public int index;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("next_roomheight")]
@@ -142,5 +142,5 @@ public struct NextRoomHeightCommand
 {
     public float height;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }

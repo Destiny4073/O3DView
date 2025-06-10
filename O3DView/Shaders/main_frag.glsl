@@ -29,6 +29,7 @@ uniform float uEnvmapStrength;
 uniform sampler2D uBumpmap;
 uniform float uUseBumpmap;
 uniform float uBumpmapStrength;
+uniform float uAlphaScale;
 
 // Renderer
 uniform float uSelected;
@@ -129,7 +130,9 @@ void main()
     if(uUseMainTex > 0) 
     {
         mainTex = texture(uMainTex, uv);
-        col.rgb *= mainTex.rgb;
+        // TODO: Is it ever multiply?
+        col.rgb = mainTex.rgb;
+        //col.rgb *= mainTex.rgb;
         col.a = mainTex.a;
     }
     if(uUseTransmap > 0)
@@ -186,6 +189,7 @@ void main()
         col.rgb += vec3(0.8, 0.8, 0.3) * (sin(uTime*3.14)*.5+.5);// * pow(clamp(1.-dot(uViewDir, vNrm), 0., 1.), 2.);
 
     //col.rgb = nrm;
+    col.a *= uAlphaScale;
 
     FragColor = col;
 }

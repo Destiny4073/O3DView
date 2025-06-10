@@ -2,16 +2,25 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+	<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+	<LangVersion>12</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Title>O3DParse</Title>
     <Authors>Thomas Mathieson</Authors>
     <Description>A pure C# library for reading and writing O3D files.</Description>
-    <Copyright>Copyright Thomas Mathieson 2024</Copyright>
+    <Copyright>Copyright Thomas Mathieson 2025</Copyright>
     <PackageProjectUrl>https://github.com/space928/O3DEncrypt</PackageProjectUrl>
-	<Version>1.4.1</Version>
+	<Version>1.4.6</Version>
 	<IncludeSymbols>True</IncludeSymbols>
 	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	<ApplicationIcon>O3DIcon.ico</ApplicationIcon>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<PackageIcon>O3DIcon.png</PackageIcon>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/space928/O3DView</RepositoryUrl>
+	<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -23,5 +32,23 @@
     <IsAotCompatible>False</IsAotCompatible>
     <IsTrimmable>False</IsTrimmable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="O3DIcon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\O3DView\Resources\O3DIcon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>

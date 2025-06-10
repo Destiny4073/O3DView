@@ -42,7 +42,9 @@ namespace O3DParse
             None,
             UnixCR,
             MacLF,
-            WindowsCRLF
+            WindowsCRLF,
+
+            UnknownLF = -1
         }
 
         /// <summary>
@@ -66,7 +68,7 @@ namespace O3DParse
             // Fast path
             int read = 0;
             int written = 0;
-            if (lineEnding != LineEnding.None)
+            if (lineEnding > LineEnding.None)
             {
                 int crLen = (lineEnding == LineEnding.WindowsCRLF ? 2 : 1);
                 read = len - crLen;
@@ -94,6 +96,7 @@ namespace O3DParse
 
             // Keep reading more data into dst until we find a line break or dst is full
             int dstPos = written;
+            LineEnding lastLineEnding = lineEnding;
             while (written < dst.Length)
             {
                 if (!FillCharBuff())
@@ -101,10 +104,29 @@ namespace O3DParse
 
                 buffSpan = charBuffer.AsSpan()[..charBuffLength];
 
+                lastLineEnding = lineEnding;
                 FindLineBreak(buffSpan, out len, out lineEnding);
 
+                // Handle the edge case where a CRLF straddles two buffer reads
+                if (lastLineEnding == LineEnding.UnknownLF)
+                {
+                    if (buffSpan.Length > 0 && buffSpan[0] == '\n')
+                    {
+                        // It must have been a CRLF
+                        // Consume the CR that's now sitting in our buffer, and return what we already read minus the LF
+                        position++;
+                        return read - 1;
+                    }
+                    else
+                    {
+                        // It must have been just an LF
+                        // Ignore the line break we just found, and return what's already in the buffer minus the LF
+                        return read - 1;
+                    }
+                }
+
                 int dstSpace = dst.Length - dstPos;
-                if (lineEnding != LineEnding.None)
+                if (lineEnding > LineEnding.None)
                 {
                     int crLen = (lineEnding == LineEnding.WindowsCRLF ? 2 : 1);
                     int justRead = len - crLen;
@@ -227,6 +249,7 @@ namespace O3DParse
         {
             // \n - UNIX  \r\n - Windows  \r - Mac
             lineEnding = LineEnding.None;
+            // Skip the last character in the buffer, if it's a \r we won't know if a \n comes in the next buffer.
             for (len = 0; len < buff.Length; len++)
             {
                 char c = buff[len];
@@ -252,6 +275,11 @@ namespace O3DParse
                         }
                         len++;
                         break;
+                    }
+                    else
+                    {
+                        // We saw an LF but might get a CR in the next buffer
+                        lineEnding = LineEnding.UnknownLF;
                     }
                 }
                 if (c == '\0')

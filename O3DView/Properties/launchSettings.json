@@ -2,7 +2,13 @@
   "profiles": {
     "O3DView": {
       "commandName": "Project",
-      "nativeDebugging": true
+      "commandLineArgs": "\"A3_64_Innenraum.o3d\" A3_64_Fahrgestell.o3d A3_64_Wagenkasten.o3d A3_Door_Lh_in.o3d A3_Door_Lh_out.o3d A3_Door_Lv_in.o3d A3_Door_Lv_out.o3d A3_Door_Rh_in.o3d A3_Door_Rh_out.o3d A3_Door_Rv_in.o3d A3_Door_Rv_out.o3d A3_schatten.o3d A3_64_Fenster.o3d",
+      "workingDirectory": "D:\\Program Files\\OMSI 2\\Vehicles\\A3\\model",
+      "nativeDebugging": false
+    },
+    "O3DView-Blank": {
+      "commandName": "Project",
+      "nativeDebugging": false
     }
   }
 }

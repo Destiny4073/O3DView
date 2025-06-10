@@ -13,7 +13,7 @@
 	<Description>A fast O3D file viewer.</Description>
 	<Copyright>Copyright Thomas Mathieson 2024</Copyright>
 	<PackageProjectUrl>https://github.com/space928/O3DEncrypt</PackageProjectUrl>
-	<Version>1.2.5</Version>
+	<Version>1.4.7</Version>
 	<ApplicationIcon>O3DIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -28,6 +28,11 @@
   <ItemGroup>
     <None Remove="main_frag.glsl" />
     <None Remove="main_vert.glsl" />
+    <None Remove="Resources\guiFont.ttf" />
+    <None Remove="Shaders\sdf_frag.glsl" />
+    <None Remove="Shaders\sdf_vert.glsl" />
+    <None Remove="unlit_frag.glsl" />
+    <None Remove="unlit_vert.glsl" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,23 +40,76 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="main_frag.glsl">
+    <EmbeddedResource Include="Resources\guiFont.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="main_vert.glsl">
+    <EmbeddedResource Include="Shaders\unlit_vert.glsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Shaders\unlit_frag.glsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Shaders\main_frag.glsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Shaders\main_vert.glsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+	  <EmbeddedResource Include="O3DIcon.ico">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Silk.NET.Input" Version="2.20.0" />
-    <PackageReference Include="Silk.NET.OpenGL" Version="2.20.0" />
-    <PackageReference Include="Silk.NET.OpenGL.Extensions.ImGui" Version="2.20.0" />
+    <PackageReference Include="Ico.Reader" Version="1.0.3" />
+    <PackageReference Include="Ookii.Dialogs.WinForms" Version="4.0.0" />
+    <PackageReference Include="Silk.NET.Input" Version="2.21.0" />
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.21.0" />
+    <PackageReference Include="Silk.NET.OpenGL.Extensions.ImGui" Version="2.21.0" />
     <PackageReference Include="StbImageSharp" Version="2.27.14" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\O3DParse\O3DParse.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\gizmo_entry.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_exit.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_link_next.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_link_prev.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_seat.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_stamper.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_ticket_change.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_ticket_money.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\gizmo_ticket_sale.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\OFL.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\player_sitting.o3d">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\player_standing.o3d">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -17,6 +17,8 @@ public struct O3DFile
     public O3DBone[] bones;
     public O3DTransform transform;
 
+    public readonly bool IsEncrypted => (encryptionKey != 0xffffffff && version > 3);
+
     /// <summary>
     /// Constructs a new O3D file struct.
     /// </summary>
@@ -44,9 +46,9 @@ public struct O3DFile
         encryptionKey = other.encryptionKey;
 
         vertices = new O3DVert[other.vertices.Length];
-        triangles = new O3DTri[other.vertices.Length];
-        materials = new O3DMaterial[other.vertices.Length];
-        bones = new O3DBone[other.vertices.Length];
+        triangles = new O3DTri[other.triangles.Length];
+        materials = new O3DMaterial[other.materials.Length];
+        bones = new O3DBone[other.bones.Length];
         transform = other.transform;
 
         Array.Copy(other.vertices, vertices, vertices.Length);
@@ -125,6 +127,9 @@ public struct O3DVec4(float x, float y, float z, float w)
 {
     public float x = x, y = y, z = z, w = w;
 
+    public static O3DVec4 Zero => new (0, 0, 0, 0);
+    public static O3DVec4 One => new (1, 1, 1, 1);
+
     public override readonly int GetHashCode()
     {
         return HashCode.Combine(x, y, z, w);
@@ -148,6 +153,9 @@ public struct O3DVec3(float x, float y, float z)
 {
     public float x = x, y = y, z = z;
 
+    public static O3DVec3 Zero => new(0, 0, 0);
+    public static O3DVec3 One => new(1, 1, 1);
+
     public override readonly int GetHashCode()
     {
         return HashCode.Combine(x, y, z);
@@ -170,6 +178,9 @@ public struct O3DVec3(float x, float y, float z)
 public struct O3DVec2(float x, float y)
 {
     public float x = x, y = y;
+
+    public static O3DVec2 Zero => new(0, 0);
+    public static O3DVec2 One => new(1, 1);
 
     public override readonly int GetHashCode()
     {

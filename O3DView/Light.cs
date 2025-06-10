@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using O3DView.Gizmos;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace O3DView
@@ -24,10 +25,21 @@ namespace O3DView
             Transform_TransformChanged(transform);
         }
 
+        public Light(Light other) : base(other)
+        {
+            transform.TransformChanged += Transform_TransformChanged;
+            Transform_TransformChanged(transform);
+        }
+
+        public override SceneObject Clone()
+        {
+            return new Light(this);
+        }
+
         public static Span<ShaderData> CopyLightData(IEnumerable<Light> src, Span<ShaderData> dst, Bounds? target = null)
         {
             int i = 0;
-            foreach(var light in src)
+            foreach (var light in src)
             {
                 if (!light.on)
                     continue;

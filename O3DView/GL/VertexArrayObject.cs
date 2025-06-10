@@ -11,11 +11,14 @@ namespace O3DView
         private readonly uint handle;
         private readonly uint vboHandle;
         private readonly BufferObject<TVert> vbo;
-        private readonly BufferObject<TInd> ibo;
+        private readonly BufferObject<TInd>? ibo;
 
         private static uint currentVAO = 0;
 
-        public VertexArrayObject(GL gl, BufferObject<TVert> vbo, BufferObject<TInd> ibo)
+        public BufferObject<TVert> VBO => vbo;
+        public BufferObject<TInd>? IBO => ibo;
+
+        public VertexArrayObject(GL gl, BufferObject<TVert> vbo, BufferObject<TInd>? ibo)
         {
             this.gl = gl;
             this.vbo = vbo;
@@ -24,10 +27,10 @@ namespace O3DView
             vboHandle = vbo.handle;
             Bind();
             vbo.Bind();
-            ibo.Bind();
+            ibo?.Bind();
             Unbind();
             vbo.Unbind();
-            ibo.Unbind();
+            ibo?.Unbind();
         }
 
         public void VertexAttributePointer(uint index, int count, VertexAttribType type, uint vertexSize, uint offset)
@@ -68,7 +71,7 @@ namespace O3DView
         {
             gl.DeleteVertexArray(handle);
             vbo.Dispose();
-            ibo.Dispose();
+            ibo?.Dispose();
         }
     }
 }

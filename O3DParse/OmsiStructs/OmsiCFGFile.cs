@@ -18,8 +18,8 @@ public class OmsiCFGFile
     public TexDetailFactorCommand? texDetailFactor;
     public NoDistanceCheckCommand? noDistanceCheck;
     public TerrainHoleCommand? terrainHole;
-    public ItemCommand? item;
-    public SetVarCommand? setVar;
+    public ItemCommand[]? items; // Not sure if these are valid
+    //public SetVarCommand[]? setVars; // Not sure if these are valid
     public CTCCommand? ctc;
     public TextTextureEnhCommand[]? textTextures;
     //public TextTextureEnhCommand[]? textTexturesEnh;
@@ -44,6 +44,13 @@ public struct RGBColour
     public byte b;
 
     public readonly Vector3 ToVector3 => new Vector3(r, g, b) * (1 / 255f);
+    public RGBColour() { }
+    public RGBColour(Vector3 vec)
+    {
+        r = (byte)(vec.X * 255);
+        g = (byte)(vec.Y * 255);
+        b = (byte)(vec.Z * 255);
+    }
 }
 
 public struct RGBAColour
@@ -54,6 +61,14 @@ public struct RGBAColour
     public byte a;
 
     public readonly Vector4 ToVector4 => new Vector4(r, g, b, a) * (1 / 255f);
+    public RGBAColour() { }
+    public RGBAColour(Vector4 vec)
+    {
+        r = (byte)(vec.X * 255);
+        g = (byte)(vec.Y * 255);
+        b = (byte)(vec.Z * 255);
+        a = (byte)(vec.W * 255);
+    }
 }
 
 public struct BGRAColour
@@ -67,99 +82,110 @@ public struct BGRAColour
     /// Returns an RGBA Vector4 in the range 0-1
     /// </summary>
     public readonly Vector4 ToVector4 => new Vector4(r, g, b, a) * (1 / 255f);
+
+    public BGRAColour() { }
+    public BGRAColour(Vector4 vec)
+    {
+        r = (byte)(vec.X * 255);
+        g = (byte)(vec.Y * 255);
+        b = (byte)(vec.Z * 255);
+        a = (byte)(vec.W * 255);
+    }
 }
 
 [OmsiIniCommand("VFDmaxmin")]
-public struct VFDCommand
+public class VFDCommand
 {
     public Vector3 min;
     public Vector3 max;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("detail_factor")]
-public struct DetailFactorCommand
+public class DetailFactorCommand
 {
     public float detailFactor;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("tex_detail_factor")]
-public struct TexDetailFactorCommand
+public class TexDetailFactorCommand
 {
     public float detailFactor;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("noDistanceCheck")]
-public struct NoDistanceCheckCommand
+public class NoDistanceCheckCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("terrainhole")]
-public struct TerrainHoleCommand
+public class TerrainHoleCommand
 {
-    public string path;
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 #region CTI Commands
 [OmsiIniCommand("item")]
-public struct ItemCommand
+public class ItemCommand
 {
-    public string name;
-    public string ctcTexture;
-    public string path;
+    public string name = string.Empty;
+    public string ctcTexture = string.Empty;
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    public SetVarCommand[]? setVars;
+
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("setvar")]
-public struct SetVarCommand
+public class SetVarCommand
 {
-    public string var;
+    public string var = string.Empty;
     public float value;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 #endregion
 
 [OmsiIniCommand("CTC")]
-public struct CTCCommand
+public class CTCCommand
 {
-    public string colourScheme;
-    public string path;
-    public string unk;
+    public string colourScheme = string.Empty;
+    public string path = string.Empty;
+    public string unk = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
     public CTCTextureCommand[]? textures;
 }
 
 [OmsiIniCommand("CTCTexture")]
-public struct CTCTextureCommand
+public class CTCTextureCommand
 {
-    public string name;
-    public string path;
+    public string name = string.Empty;
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("texttexture")]
-public struct TextTextureCommand
+public class TextTextureCommand
 {
-    public string stringVar;
-    public string fontName;
+    public string stringVar = string.Empty;
+    public string fontName = string.Empty;
     public uint width;
     public uint height;
     public bool fullcolour;
     public RGBColour colour;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum TextAlign : int
@@ -174,10 +200,10 @@ public enum TextAlign : int
 
 [OmsiIniCommand("texttexture_enh")]
 [OmsiIniDerivedCommand<TextTextureCommand>]
-public struct TextTextureEnhCommand
+public class TextTextureEnhCommand
 {
-    public string? stringVar;
-    public string? fontName;
+    public string stringVar = string.Empty;
+    public string fontName = string.Empty;
     public uint width;
     public uint height;
     public bool fullcolour;
@@ -191,19 +217,19 @@ public struct TextTextureEnhCommand
 }
 
 [OmsiIniCommand("scripttexture")]
-public struct ScriptTextureCommand
+public class ScriptTextureCommand
 {
     public uint width, height;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("LOD")]
-public struct LODCommand
+public class LODCommand
 {
     public float viewRadius;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
     public MeshCommand[]? meshes;
     // TODO: Do interior lights belong to a LOD?
     //public InteriorLightCommand[]? interiorLights;
@@ -211,18 +237,18 @@ public struct LODCommand
 }
 
 [OmsiIniCommand("interiorlight")]
-public struct InteriorLightCommand
+public class InteriorLightCommand
 {
-    public string var;
+    public string var = string.Empty;
     public float range;
     public RGBColour colour;
     public Vector3 pos;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("spotlight")]
-public struct SpotLightCommand
+public class SpotLightCommand
 {
     public Vector3 pos;
     public Vector3 direction;
@@ -231,13 +257,13 @@ public struct SpotLightCommand
     public float innerRadius;
     public float outerRadius;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("mesh")]
-public struct MeshCommand
+public class MeshCommand
 {
-    public string path;
+    public string path = string.Empty;
 
     public MeshIdentCommand? meshIdent;
     public VisibleCommand[]? visibles;
@@ -260,97 +286,97 @@ public struct MeshCommand
     public SmokeCommand[]? smokes;
     public ParticleEmitterCommand[]? particleEmitters;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("visible")]
-public struct VisibleCommand
+public class VisibleCommand
 {
-    public string scriptVar;
+    public string scriptVar = string.Empty;
     public float value;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [Flags]
 public enum OmsiViewpoint
 {
-    Never,
+    Always,
     Exterior = 1 << 0,
     Interior = 1 << 1,
     AI = 1 << 2,
 }
 
 [OmsiIniCommand("viewpoint")]
-public struct ViewpointCommand
+public class ViewpointCommand
 {
     public OmsiViewpoint viewpoint;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("mesh_ident")]
-public struct MeshIdentCommand
+public class MeshIdentCommand
 {
-    public string name;
+    public string name = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("animparent")]
-public struct AnimParentCommand
+public class AnimParentCommand
 {
-    public string parentName;
+    public string parentName = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("mouseevent")]
-public struct MouseEventCommand
+public class MouseEventCommand
 {
-    public string triggerName;
+    public string triggerName = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("isshadow")]
-public struct IsShadowCommand
+public class IsShadowCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("shadow")]
-public struct ShadowCommand
+public class ShadowCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("setbone")]
-public struct SetBoneCommand
+public class SetBoneCommand
 {
-    public string name;
+    public string name = string.Empty;
     public int value;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("smoothskin")]
-public struct SmoothSkinCommand
+public class SmoothSkinCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("illumination")]
-public struct IlluminationCommand
+public class IlluminationCommand
 {
     public int value;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 #region Anim
 [OmsiIniCommand("newanim")]
-public struct NewAnimCommand
+public class NewAnimCommand
 {
     public AnimOriginFromMeshCommand? originFromMesh;
     public AnimOriginTransCommand? originTrans;
@@ -363,74 +389,74 @@ public struct NewAnimCommand
     public AnimMaxspeedCommand? maxspeed;
     public AnimDelayCommand? delay;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("origin_from_mesh")]
 [OmsiIniVerbatimCommand]
-public struct AnimOriginFromMeshCommand { }
+public class AnimOriginFromMeshCommand { }
 
 [OmsiIniCommand("origin_trans")]
 [OmsiIniVerbatimCommand]
-public struct AnimOriginTransCommand
+public class AnimOriginTransCommand
 {
     public Vector3 origin;
 }
 
 [OmsiIniCommand("origin_rot_x")]
 [OmsiIniVerbatimCommand]
-public struct AnimOriginRotXCommand
+public class AnimOriginRotXCommand
 {
     public float rotX;
 }
 
 [OmsiIniCommand("origin_rot_y")]
 [OmsiIniVerbatimCommand]
-public struct AnimOriginRotYCommand
+public class AnimOriginRotYCommand
 {
     public float rotY;
 }
 
 [OmsiIniCommand("origin_rot_z")]
 [OmsiIniVerbatimCommand]
-public struct AnimOriginRotZCommand
+public class AnimOriginRotZCommand
 {
     public float rotZ;
 }
 
 [OmsiIniCommand("anim_trans")]
 [OmsiIniVerbatimCommand]
-public struct AnimTransCommand
+public class AnimTransCommand
 {
-    public string animCurve;
+    public string animVar = string.Empty;
     public float delta;
 }
 
 [OmsiIniCommand("anim_rot")]
 [OmsiIniVerbatimCommand]
-public struct AnimRotCommand
+public class AnimRotCommand
 {
-    public string animCurve;
+    public string animVar = string.Empty;
     public float delta;
 }
 
 [OmsiIniCommand("offset")]
 [OmsiIniVerbatimCommand]
-public struct AnimOffsetCommand
+public class AnimOffsetCommand
 {
     public float offset;
 }
 
 [OmsiIniCommand("maxspeed")]
 [OmsiIniVerbatimCommand]
-public struct AnimMaxspeedCommand
+public class AnimMaxspeedCommand
 {
     public float maxspeed;
 }
 
 [OmsiIniCommand("delay")]
 [OmsiIniVerbatimCommand]
-public struct AnimDelayCommand
+public class AnimDelayCommand
 {
     public float delay;
 }
@@ -446,30 +472,30 @@ public enum OmsiLightEffect
 }
 
 [OmsiIniCommand("light")]
-public struct LightCommand
+public class LightCommand
 {
-    public string brightnessVar;
+    public string brightnessVar = string.Empty;
     public float size;
     public RGBColour colour;
     public Vector3 position;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("light_enh")]
-public struct LightEnhCommand
+public class LightEnhCommand
 {
     public Vector3 position;
     public RGBColour colour;
     public float size;
-    public string brightnessVar;
+    public string brightnessVar = string.Empty;
     public float brightness;
     public float zOffset;
     public OmsiLightEffect effect;
     public float fadeTime;
     [OmsiIniOptional] public string? bitmap;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum OmsiLightRotationAxis
@@ -482,7 +508,7 @@ public enum OmsiLightRotationAxis
 [OmsiIniCommand("light_enh_2")]
 [OmsiIniDerivedCommand<LightEnhCommand>]
 [OmsiIniDerivedCommand<LightCommand>]
-public struct LightEnh2Command
+public class LightEnh2Command
 {
     public Vector3 position;
     public Vector3 direction;
@@ -493,7 +519,7 @@ public struct LightEnh2Command
     public float size;
     public float innerConeAngle;
     public float outerConeAngle;
-    public string brightnessVar;
+    public string brightnessVar = string.Empty;
     public float brightness;
     public float zOffset;
     public OmsiLightEffect effect;
@@ -501,64 +527,65 @@ public struct LightEnh2Command
     public float fadeTime;
     [OmsiIniOptional] public string? bitmap;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("illumination_interior")]
-public struct IlluminationInteriorCommand
+public class IlluminationInteriorCommand
 {
     public int lightA, lightB, lightC, lightD;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("texchanges")]
-public struct TexChangesCommand
+public class TexChangesCommand
 {
-    public string path;
+    public string path = string.Empty;
+    // TODO: Implement texchanges
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 #region Particle System Commands
 [OmsiIniCommand("smoke")]
-public struct SmokeCommand
+public class SmokeCommand
 {
     public Vector3 pos;
     public Vector3 direction;
     // All of these can be either an OSC variable name, or a float
-    public string initialSpeed;
-    public string speedVariation;
-    public string emissionRate;
-    public string lifespan;
-    public string drag;
-    public string gravity;
-    public string initialSize;
-    public string growRate;
-    public string initialAlpha;
-    public string alphaVariation;
+    public string? initialSpeed;
+    public string? speedVariation;
+    public string? emissionRate;
+    public string? lifespan;
+    public string? drag;
+    public string? gravity;
+    public string? initialSize;
+    public string? growRate;
+    public string? initialAlpha;
+    public string? alphaVariation;
     public Vector3 colour;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("particle_emitter")]
-public struct ParticleEmitterCommand
+public class ParticleEmitterCommand
 {
     // TODO: Implement particle emitter, this command is quite complex.
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("PS_attachTo")]
-public struct PSAttachToCommand
+public class PSAttachToCommand
 {
     public int unk1;
     public int unk2;
     public int unk3;
     // TODO: Work out what these mean...
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 // TODO: There are a bunch of other PS "commands" such as:
@@ -570,9 +597,9 @@ public struct PSAttachToCommand
 
 #region Matl Commands
 [OmsiIniCommand("matl")]
-public struct MatlCommand
+public class MatlCommand
 {
-    public string path;
+    public string path = string.Empty;
     public uint? index;
 
     public AlphascaleCommand? alphascale;
@@ -596,23 +623,23 @@ public struct MatlCommand
     public MatlUseScriptTextureCommand? useScriptTexture;
     public MatlUseTextTextureCommand? useTextTexture;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_change")]
-public struct MatlChangeCommand
+public class MatlChangeCommand
 {
-    public string path;
+    public string path = string.Empty;
     public float value;
-    public string var;
+    public string var = string.Empty;
 
     public MatlItemCommand[]? items;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_item")]
-public struct MatlItemCommand
+public class MatlItemCommand
 {
     public AlphascaleCommand? alphascale;
     public AllcolorCommand? allcolor;
@@ -636,19 +663,19 @@ public struct MatlItemCommand
     public MatlUseScriptTextureCommand? useScriptTexture;
     public MatlUseTextTextureCommand? useTextTexture;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("alphascale")]
-public struct AlphascaleCommand
+public class AlphascaleCommand
 {
-    public string var;
+    public string var = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("allcolor")]
-public struct AllcolorCommand
+public class AllcolorCommand
 {
     public Vector4 diffuse;
     public Vector3 ambient;
@@ -656,7 +683,7 @@ public struct AllcolorCommand
     public Vector3 emission;
     public float specPower;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 public enum MatlAlphaMode
@@ -667,149 +694,149 @@ public enum MatlAlphaMode
 }
 
 [OmsiIniCommand("matl_alpha")]
-public struct MatlAlphaCommand
+public class MatlAlphaCommand
 {
     public MatlAlphaMode alphaMode;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_bumpmap")]
-public struct MatlBumpmapCommand
+public class MatlBumpmapCommand
 {
-    public string path;
+    public string path = string.Empty;
     public float strength;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_envmap")]
-public struct MatlEnvmapCommand
+public class MatlEnvmapCommand
 {
-    public string path;
+    public string path = string.Empty;
     public float reflectivity;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_envmap_mask")]
-public struct MatlEnvmapMaskCommand
-{
-    public string path;
+public class MatlEnvmapMaskCommand
+{ 
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_freetex")]
-public struct MatlFreetexCommand
+public class MatlFreetexCommand
 {
-    public string path;
-    public string varName;
+    public string path = string.Empty;
+    public string varName = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_lightmap")]
-public struct MatlLightmapCommand
+public class MatlLightmapCommand
 {
-    public string path;
+    public string path = string.Empty;
     [OmsiIniOptional] public string? var;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_nightmap")]
-public struct MatlNightmapCommand
+public class MatlNightmapCommand
 {
-    public string path;
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_noZwrite")]
-public struct MatlNoZWriteCommand
+public class MatlNoZWriteCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_noZcheck")]
-public struct MatlNoZCheckCommand
+public class MatlNoZCheckCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_raindropmap")]
-public struct MatlRaindropMap
+public class MatlRaindropMap
 {
-    public string path;
-    public string var;
+    public string path = string.Empty;
+    public string var = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_texadress_border")]
-public struct MatlTexAdressBorderCommand
+public class MatlTexAdressBorderCommand
 {
     public BGRAColour borderColour;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_texadress_clamp")]
-public struct MatlTexAdressClampCommand
+public class MatlTexAdressClampCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_texadress_mirror")]
-public struct MatlTexAdressMirrorCommand
+public class MatlTexAdressMirrorCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_texadress_mirroronce")]
-public struct MatlTexAdressMirrorOnceCommand
+public class MatlTexAdressMirrorOnceCommand
 {
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("matl_transmap")]
-public struct MatlTransmapCommand
+public class MatlTransmapCommand
 {
-    public string path;
+    public string path = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("texcoordtransX")]
-public struct MatlTexCoordTransXCommand
+public class MatlTexCoordTransXCommand
 {
-    public string var;
+    public string var = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("texcoordtransY")]
-public struct MatlTexCoordTransYCommand
+public class MatlTexCoordTransYCommand
 {
-    public string var;
+    public string var = string.Empty;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("useScriptTexture")]
-public struct MatlUseScriptTextureCommand
+public class MatlUseScriptTextureCommand
 {
     public int index;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("useTextTexture")]
-public struct MatlUseTextTextureCommand
+public class MatlUseTextTextureCommand
 {
-    public string var;
+    public int index;
 
-    [OmsiIniComments] public string comments;
+    [OmsiIniComments] public string? comments;
 }
 #endregion

@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using O3DView.Gizmos;
 using Silk.NET.Input;
 
 namespace O3DView
@@ -13,6 +14,7 @@ namespace O3DView
         public float orbitSpeed = 1;
         public float zoomSpeed = 1;
         public float moveSpeed = 1;
+        public float fieldOfView = 60;
 
         public IKeyboard? Keyboard { set => keyboard = value; }
         public IMouse? Mouse { set => mouse = value; }
@@ -45,6 +47,16 @@ namespace O3DView
                 target += delta;
             };*/
             name = $"Camera_{cameraNo++}";
+        }
+
+        public Camera(Camera other) : base(other)
+        {
+            imGuiIO = ImGui.GetIO();
+        }
+
+        public override SceneObject Clone()
+        {
+            return new Camera(this);
         }
 
         private void UpdateMatrix()
@@ -106,20 +118,23 @@ namespace O3DView
 
             var mousePos = mouse.Position;
             var delta = mousePos - lastMouse;
-            if(mouse.IsButtonPressed(MouseButton.Left) && mouse.IsButtonPressed(MouseButton.Right))
+            bool left = mouse.IsButtonPressed(MouseButton.Left);
+            bool middle = mouse.IsButtonPressed(MouseButton.Middle);
+            bool right = mouse.IsButtonPressed(MouseButton.Right);
+            if(left && right || (middle && right))
             {
                 // Zoom
                 orbitDist -= orbitDist * delta.Y * panSpeed * panSpeedMul;
                 orbitDist = MathF.Max(0.01f, orbitDist);
                 UpdateMatrix();
-            } else if(mouse.IsButtonPressed(MouseButton.Left))
+            } else if (left || (middle && keyboard.IsKeyPressed(Key.AltLeft)))
             {
                 // Orbit
                 rotation -= new Vector2(-delta.X, -delta.Y) * orbitSpeed * orbitSpeedMul;
                 rotation.Y = MathF.Min(MathF.Max(rotation.Y, -MathF.PI / 2 + (float)1e-6), MathF.PI / 2 - (float)1e-6);
 
                 UpdateMatrix();
-            } else if (mouse.IsButtonPressed(MouseButton.Right))
+            } else if (mouse.IsButtonPressed(MouseButton.Right) || middle)
             {
                 // Pan
                 float speed = panSpeed * panSpeedMul;
