@@ -34,6 +34,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="O3DParse.Test" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="O3DIcon.ico" />
   </ItemGroup>
 

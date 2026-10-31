@@ -12,6 +12,7 @@ namespace O3DParse
         private char[] charBuffer;
         private Encoding encoding;
         private Decoder decoder;
+        private readonly bool userEncoding;
         private int position = 0;
         private int charBuffLength = 0;
         private bool detectedEncoding = false;
@@ -24,6 +25,7 @@ namespace O3DParse
             this.stream = stream;
             this.leaveOpen = leaveOpen;
             this.encoding = encoding ?? Encoding.Default;
+            userEncoding = encoding != null;
             detectedEncoding = encoding != null;
             decoder = this.encoding.GetDecoder();
 
@@ -351,9 +353,14 @@ namespace O3DParse
                 changedEncoding = true;
                 preamble = 4;
             }
-            else if (bytesRead == 2)
+            else if (!userEncoding)
             {
-                detectedEncoding = false;
+                // No byte-order mark: guess the code page from the content instead of
+                // assuming an encoding. OMSI content is written in its author's ANSI code
+                // page (Windows-1252 for the stock game, 1250/1251 for Central European or
+                // Russian mods), UTF-8 only in newer files.
+                encoding = OmsiEncoding.DetectTextEncoding(byteBuffer.AsSpan(0, bytesRead));
+                changedEncoding = true;
             }
 
             if (changedEncoding)

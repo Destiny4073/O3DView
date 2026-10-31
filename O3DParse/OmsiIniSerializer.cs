@@ -459,16 +459,21 @@ namespace O3DParse
                 var elType = targetType.GetElementType()!; // We know that targetType is an array hence this never returns null
 
                 Span<char> line = stackalloc char[256];
-                var read = reader.ReadLine(line);
-                if (read < 0)
-                    throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", field, parentType, lineNumber);
-                if (read > line.Length)
-                    throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as the length of an array of {elType.Name}! Line was too long to be parsed.", field, parentType, lineNumber);
-                line = line[..read];
 
-                lineNumber++;
-                if (!uint.TryParse(line, out uint arrSize))
-                    throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as the length of an array of {elType.Name}!", field, parentType, lineNumber);
+                // Missing length line: an empty array, the next line stays for the next command
+                uint arrSize = 0;
+                int next = reader.Peek();
+                if (next >= 0 && next != '[')
+                {
+                    var read = reader.ReadLine(line);
+                    if (read > line.Length)
+                        throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as the length of an array of {elType.Name}! Line was too long to be parsed.", field, parentType, lineNumber);
+                    lineNumber++;
+
+                    arrSize = (uint)Math.Max(0, OmsiNumbers.ParseLong(line[..read]));
+                    if (arrSize > 10_000_000)
+                        throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as the length of an array of {elType.Name}! Is the file corrupted?", field, parentType, lineNumber);
+                }
 
                 var arr = Array.CreateInstance(elType, arrSize);
                 for (int i = 0; i < arrSize; i++)
@@ -479,16 +484,17 @@ namespace O3DParse
             {
                 if (field.GetCustomAttribute<OmsiIniOptionalAttribute>() is OmsiIniOptionalAttribute optional)
                 {
-                    try
-                    {
-                        object value = DeserializeSimpleType(reader, targetType, ref lineNumber, field, parentType);
-                        field.SetValue(parent, value);
-                    }
-                    catch
+                    // A parameter that isn't there keeps the default and is not eaten from
+                    // the following command's lines
+                    int next = reader.Peek();
+                    if (next < 0 || next == '[')
                     {
                         field.SetValue(parent, optional.DefaultValue);
                         return false;
                     }
+
+                    object value = DeserializeSimpleType(reader, targetType, ref lineNumber, field, parentType);
+                    field.SetValue(parent, value);
                 }
                 else
                 {
@@ -498,6 +504,14 @@ namespace O3DParse
             }
             else if (Nullable.GetUnderlyingType(targetType) is Type nullableType)
             {
+                int next = reader.Peek();
+                if (next < 0 || next == '[')
+                {
+                    if (field.GetCustomAttribute<OmsiIniOptionalAttribute>() is OmsiIniOptionalAttribute optional)
+                        field.SetValue(parent, optional.DefaultValue);
+                    return false;
+                }
+
                 try
                 {
                     object value = DeserializeSimpleType(reader, nullableType, ref lineNumber, field, parentType);
@@ -547,60 +561,83 @@ namespace O3DParse
             var simpleType = targetType;
             if (targetType.IsEnum)
                 simpleType = targetType.GetEnumUnderlyingType();
-            object value;
             Span<char> line = stackalloc char[256];
+
+            // Missing parameter: the next command block starts, or the file ended. OMSI reads
+            // a default value and leaves the line for the next command, instead of eating it
+            // as data (fixed parameter lists end at the next block).
+            int next = reader.Peek();
+            if (next < 0 || next == '[')
+                return DefaultValue(simpleType, targetType);
+
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", field, parentType, lineNumber);
+                return DefaultValue(simpleType, targetType);
             if (read > line.Length)
                 throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a {targetType.Name}! Line was too long to be parsed.", field, parentType, lineNumber);
             line = line[..read];
+            lineNumber++;
 
-            try
-            {
-                if (simpleType == typeof(bool))
-                    value = int.Parse(line) != 0;
-                else if (simpleType == typeof(byte))
-                    value = byte.Parse(line);
-                else if (simpleType == typeof(sbyte))
-                    value = sbyte.Parse(line);
-                else if (simpleType == typeof(char))
-                    value = line[0];//char.Parse(line);
-                else if (simpleType == typeof(decimal))
-                    value = decimal.Parse(line);
-                else if (simpleType == typeof(double))
-                    value = double.Parse(line);
-                else if (simpleType == typeof(float))
-                    value = float.Parse(line);
-                else if (simpleType == typeof(int))
-                    value = int.Parse(line);
-                else if (simpleType == typeof(uint))
-                    value = uint.Parse(line);
-                else if (simpleType == typeof(nint))
-                    value = nint.Parse(line);
-                else if (simpleType == typeof(long))
-                    value = long.Parse(line);
-                else if (simpleType == typeof(ulong))
-                    value = ulong.Parse(line);
-                else if (simpleType == typeof(short))
-                    value = short.Parse(line);
-                else if (simpleType == typeof(ushort))
-                    value = ushort.Parse(line);
-                else if (simpleType == typeof(string))
-                    value = line.ToString();
-                else
-                    throw new OmsiIniSerializationException($"Fields of type {targetType.Name} are not supported!", field, parentType, lineNumber);
-            }
-            catch (Exception ex) when (ex is FormatException or OverflowException)
-            {
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a {targetType.Name}!", field, parentType, lineNumber, ex);
-            }
+            object value = ParseSimpleValue(line, simpleType, targetType, field, parentType, lineNumber);
 
             if (targetType.IsEnum)
                 value = Enum.ToObject(targetType, value);
 
-            lineNumber++;
             return value;
+        }
+
+        /// <summary>The value OMSI reads for a parameter line that isn't there (Delphi's
+        /// default of zero, or an empty string).</summary>
+        private static object DefaultValue(Type simpleType, Type targetType)
+        {
+            if (simpleType == typeof(string))
+                return string.Empty;
+            if (targetType.IsEnum)
+                return Enum.ToObject(targetType, Activator.CreateInstance(simpleType)!);
+            return Activator.CreateInstance(simpleType)!;
+        }
+
+        private static object ParseSimpleValue(ReadOnlySpan<char> line, Type simpleType, Type targetType, FieldInfo? field, Type? parentType, int lineNumber)
+        {
+            // All numbers go through the lenient Delphi-style parser: OMSI files carry
+            // trailing comments, comma decimal separators and the occasional bit of garbage
+            if (simpleType == typeof(bool))
+                return OmsiNumbers.ParseBool(line);
+            if (simpleType == typeof(byte))
+                return OmsiNumbers.ParseByte(line);
+            if (simpleType == typeof(sbyte))
+                return OmsiNumbers.ParseSByte(line);
+            if (simpleType == typeof(char))
+                return line.IsEmpty ? '\0' : line[0];
+            if (simpleType == typeof(decimal))
+            {
+                double d = OmsiNumbers.ParseDouble(line);
+                if (d >= (double)decimal.MaxValue) return decimal.MaxValue;
+                if (d <= (double)decimal.MinValue) return decimal.MinValue;
+                return (decimal)d;
+            }
+            if (simpleType == typeof(double))
+                return OmsiNumbers.ParseDouble(line);
+            if (simpleType == typeof(float))
+                return OmsiNumbers.ParseFloat(line);
+            if (simpleType == typeof(int))
+                return OmsiNumbers.ParseInt32(line);
+            if (simpleType == typeof(uint))
+                return OmsiNumbers.ParseUInt32(line);
+            if (simpleType == typeof(nint))
+                return (nint)OmsiNumbers.ParseLong(line);
+            if (simpleType == typeof(long))
+                return OmsiNumbers.ParseLong(line);
+            if (simpleType == typeof(ulong))
+                return (ulong)Math.Max(0, OmsiNumbers.ParseLong(line));
+            if (simpleType == typeof(short))
+                return (short)Math.Clamp(OmsiNumbers.ParseLong(line), short.MinValue, short.MaxValue);
+            if (simpleType == typeof(ushort))
+                return (ushort)Math.Clamp(OmsiNumbers.ParseLong(line), 0, ushort.MaxValue);
+            if (simpleType == typeof(string))
+                return line.ToString();
+
+            throw new OmsiIniSerializationException($"Fields of type {targetType.Name} are not supported!", field, parentType, lineNumber);
         }
         #endregion Deserializer
 
@@ -1069,7 +1106,8 @@ namespace O3DParse
         }
 
         /// <summary>
-        /// Reads a string from an IniFileReader.
+        /// Reads a string from an IniFileReader. The end of the file reads as an empty string,
+        /// as OMSI (whose loader reads default values past a truncated file) does.
         /// </summary>
         /// <param name="reader">The IniFileReader instance.</param>
         /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
@@ -1080,107 +1118,84 @@ namespace O3DParse
             Span<char> line = stackalloc char[256];
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+                return string.Empty;
             if (read > line.Length)
                 throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
             lineNumber++;
-            return new(line[..read]);
+            return read == 0 ? string.Empty : new(line[..read]);
         }
 
         /// <summary>
-        /// Reads an integer from an IniFileReader.
+        /// Reads an integer from an IniFileReader, leniently (Delphi semantics: garbage reads
+        /// as zero). The end of the file reads as zero.
         /// </summary>
         /// <param name="reader">The IniFileReader instance.</param>
         /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
         /// <returns>The deserialized value.</returns>
-        /// <exception cref="OmsiIniSerializationException"></exception>
         internal static int ReadInt(IniFileReader reader, ref int lineNumber)
         {
             Span<char> line = stackalloc char[256];
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+                return 0;
             if (read > line.Length)
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
-            line = line[..read];
-
-            if (!int.TryParse(line, out int val))
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as an int!", null, null, lineNumber);
-
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as an int! Line was too long to be parsed.", null, null, lineNumber);
             lineNumber++;
-            return val;
+            return OmsiNumbers.ParseInt32(line[..read]);
         }
 
         /// <summary>
-        /// Reads an unsigned integer from an IniFileReader.
+        /// Reads an unsigned integer from an IniFileReader, leniently; a negative value reads as zero.
         /// </summary>
         /// <param name="reader">The IniFileReader instance.</param>
         /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
         /// <returns>The deserialized value.</returns>
-        /// <exception cref="OmsiIniSerializationException"></exception>
         internal static uint ReadUInt(IniFileReader reader, ref int lineNumber)
         {
             Span<char> line = stackalloc char[256];
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+                return 0;
             if (read > line.Length)
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
-            line = line[..read];
-
-            if (!uint.TryParse(line, out uint val))
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a uint!", null, null, lineNumber);
-
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a uint! Line was too long to be parsed.", null, null, lineNumber);
             lineNumber++;
-            return val;
+            return OmsiNumbers.ParseUInt32(line[..read]);
         }
 
         /// <summary>
-        /// Reads a byte from an IniFileReader.
+        /// Reads a byte from an IniFileReader, leniently, clamped to its range.
         /// </summary>
         /// <param name="reader">The IniFileReader instance.</param>
         /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
         /// <returns>The deserialized value.</returns>
-        /// <exception cref="OmsiIniSerializationException"></exception>
         internal static byte ReadByte(IniFileReader reader, ref int lineNumber)
         {
             Span<char> line = stackalloc char[256];
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+                return 0;
             if (read > line.Length)
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
-            line = line[..read];
-
-            if (!byte.TryParse(line, out byte val))
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a byte!", null, null, lineNumber);
-
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a byte! Line was too long to be parsed.", null, null, lineNumber);
             lineNumber++;
-            return val;
+            return OmsiNumbers.ParseByte(line[..read]);
         }
 
         /// <summary>
-        /// Reads a float from an IniFileReader.
+        /// Reads a float from an IniFileReader, leniently (Delphi semantics: garbage reads as zero).
         /// </summary>
         /// <param name="reader">The IniFileReader instance.</param>
         /// <param name="lineNumber">The reference to the current line number in the file being deserialized</param>
         /// <returns>The deserialized value.</returns>
-        /// <exception cref="OmsiIniSerializationException"></exception>
         internal static float ReadFloat(IniFileReader reader, ref int lineNumber)
         {
             Span<char> line = stackalloc char[256];
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+                return 0f;
             if (read > line.Length)
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
-            line = line[..read];
-
-            if (!float.TryParse(line, out float val))
-                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a float!", null, null, lineNumber);
-
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a float! Line was too long to be parsed.", null, null, lineNumber);
             lineNumber++;
-            return val;
+            return OmsiNumbers.ParseFloat(line[..read]);
         }
 
         /// <summary>
@@ -1196,7 +1211,7 @@ namespace O3DParse
             Span<char> line = stackalloc char[256];
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+                return false;
             if (read > line.Length)
                 throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a string! Line was too long to be parsed.", null, null, lineNumber);
             line = line[..read];

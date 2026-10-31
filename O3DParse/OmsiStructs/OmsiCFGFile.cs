@@ -29,6 +29,7 @@ public class OmsiCFGFile
     public MeshCommand[]? meshes; // Normally meshes belong to a LOD, but it's possible to define a model without lods
     public InteriorLightCommand[]? interiorLights;
     public SpotLightCommand[]? spotLights;
+    public SpotLight2Command[]? spotLights2;
     public LightEnh2Command[]? lights;          // Technically [light]s belong to a [mesh], but it's not uncommon for authors to place 
     //public LightEnhCommand[]? lightEnhs;    // all their lights after all the meshes (and spotlights), omsi doesn't care because it 
     //public LightEnh2Command[]? lightEnh2s;  // just adds them to the last mesh, but our parser can't do that, so we put them here...
@@ -260,6 +261,32 @@ public class SpotLightCommand
     [OmsiIniComments] public string? comments;
 }
 
+/// <summary>
+/// A spotlight whose brightness is driven by a script variable. Same twelve numbers as
+/// <see cref="SpotLightCommand"/>, plus the variable name and an optional mirror flag.
+/// </summary>
+[OmsiIniCommand("spotlight_2")]
+public class SpotLight2Command
+{
+    public Vector3 pos;
+    public Vector3 direction;
+    public Vector3 colour;
+    public float range;
+    public float innerRadius;
+    public float outerRadius;
+    public string var = string.Empty;
+    /// <summary>
+    /// The mirror flag is often left out entirely; when it is written, a value under 0.5
+    /// means mirrored (see openOMSI omsi-model).
+    /// </summary>
+    public float mirrored;
+
+    [OmsiIniComments] public string? comments;
+
+    /// <summary>Whether the spotlight is mirrored; a flag that isn't written means it is.</summary>
+    public bool IsMirrored => mirrored < 0.5f;
+}
+
 [OmsiIniCommand("mesh")]
 public class MeshCommand
 {
@@ -282,9 +309,10 @@ public class MeshCommand
     public LightEnh2Command[]? lights;
     //public LightEnhCommand[]? lightEnhs;
     //public LightEnh2Command[]? lightEnh2s;
-    public TexChangesCommand? texChanges;
+    public TexChangesCommand[]? texChanges;
     public SmokeCommand[]? smokes;
     public ParticleEmitterCommand[]? particleEmitters;
+    public PSAttachToCommand[]? psAttachTos;
 
     [OmsiIniComments] public string? comments;
 }
@@ -542,7 +570,8 @@ public class IlluminationInteriorCommand
 public class TexChangesCommand
 {
     public string path = string.Empty;
-    // TODO: Implement texchanges
+    // The chtex_*.cfg file this names lists the texture change masters; parsing it is up to
+    // the application
 
     [OmsiIniComments] public string? comments;
 }
@@ -570,29 +599,68 @@ public class SmokeCommand
 }
 
 [OmsiIniCommand("particle_emitter")]
+[OmsiIniCommandSerializer<OmsiParticleEmitterSerializer>]
 public class ParticleEmitterCommand
 {
-    // TODO: Implement particle emitter, this command is quite complex.
+    /// <summary>
+    /// The emitter's raw block: every line up to the next command (a [path] and the
+    /// ps_* parameter lines).
+    /// </summary>
+    public string[]? lines;
 
     [OmsiIniComments] public string? comments;
+}
+
+/// <summary>
+/// Reads the free-form block of a particle emitter: every line up to the next command.
+/// </summary>
+public class OmsiParticleEmitterSerializer : IOmsiIniCommandCustomSerializer
+{
+    public void Deserialize(ref object target, Type targetType, string command, IniFileReader reader, ref int lineNumber, object? parent)
+    {
+        if (target is not ParticleEmitterCommand dst)
+            return;
+
+        Span<char> line = stackalloc char[1024];
+        List<string> lines = [];
+        while (reader.Peek() is int next && next >= 0 && next != '[')
+        {
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                break;
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a particle emitter line! Line was too long to be parsed.", null, null, lineNumber);
+            lineNumber++;
+            lines.Add(read == 0 ? string.Empty : line[..read].ToString());
+        }
+        dst.lines = lines.ToArray();
+    }
+
+    public void Serialize(object? obj, Type objType, string? commandName, TextWriter writer, object? parent)
+    {
+        if (obj is not ParticleEmitterCommand emitter)
+            return;
+
+        if (commandName != null)
+            writer.WriteLine(commandName);
+        if (emitter.lines == null)
+            return;
+
+        foreach (string line in emitter.lines)
+            writer.WriteLine(line);
+    }
 }
 
 [OmsiIniCommand("PS_attachTo")]
 public class PSAttachToCommand
 {
-    public int unk1;
-    public int unk2;
-    public int unk3;
-    // TODO: Work out what these mean...
+    public Vector3 attachTo;
 
     [OmsiIniComments] public string? comments;
 }
 
-// TODO: There are a bunch of other PS "commands" such as:
-// --PS_instExplosion_partcount--
-// --PS_livetime--
-// --PS_emitter_livetime--
-// etc...
+// The remaining ps_* commands ([ps_freq], [ps_livetime], [ps_g], [ps_size_start], ...) are
+// free-form lines inside a [particle_emitter] block, kept raw in ParticleEmitterCommand.lines.
 #endregion
 
 #region Matl Commands
@@ -622,6 +690,11 @@ public class MatlCommand
     public MatlTexCoordTransYCommand? texcoordTransY;
     public MatlUseScriptTextureCommand? useScriptTexture;
     public MatlUseTextTextureCommand? useTextTexture;
+    public MatlGlowCommand? glow;
+    public LedGlowEffectCommand? ledGlowEffect;
+    public MatlEnvmapRealtimeCommand? envmapRealtime;
+    public MatlZBiasCommand? zBias;
+    public MatlRaindropMap? raindropMap;
 
     [OmsiIniComments] public string? comments;
 }
@@ -633,7 +706,36 @@ public class MatlChangeCommand
     public float value;
     public string var = string.Empty;
 
+    // The variant materials of the change...
     public MatlItemCommand[]? items;
+
+    // ...and the material commands that apply to the change's own (base) material, written
+    // directly after [matl_change]
+    public AlphascaleCommand? alphascale;
+    public AllcolorCommand? allcolor;
+    public MatlAlphaCommand? alpha;
+    public MatlBumpmapCommand? bumpmap;
+    public MatlEnvmapCommand? envmap;
+    public MatlEnvmapMaskCommand? envmapMask;
+    public MatlFreetexCommand[]? freetexes;
+    public MatlLightmapCommand? lightmap;
+    public MatlNightmapCommand? nightmap;
+    public MatlNoZWriteCommand? noZWrite;
+    public MatlNoZCheckCommand? noZCheck;
+    public MatlGlowCommand? glow;
+    public LedGlowEffectCommand? ledGlowEffect;
+    public MatlEnvmapRealtimeCommand? envmapRealtime;
+    public MatlZBiasCommand? zBias;
+    public MatlRaindropMap? raindropMap;
+    public MatlTexAdressBorderCommand? texadressborder;
+    public MatlTexAdressClampCommand? texadressclamp;
+    public MatlTexAdressMirrorCommand? texadressmirror;
+    public MatlTexAdressMirrorOnceCommand? texadressmirroronce;
+    public MatlTransmapCommand? transmap;
+    public MatlTexCoordTransXCommand? texcoordTransX;
+    public MatlTexCoordTransYCommand? texcoordTransY;
+    public MatlUseScriptTextureCommand? useScriptTexture;
+    public MatlUseTextTextureCommand? useTextTexture;
 
     [OmsiIniComments] public string? comments;
 }
@@ -662,6 +764,10 @@ public class MatlItemCommand
     public MatlTexCoordTransYCommand? texcoordTransY;
     public MatlUseScriptTextureCommand? useScriptTexture;
     public MatlUseTextTextureCommand? useTextTexture;
+    public MatlGlowCommand? glow;
+    public LedGlowEffectCommand? ledGlowEffect;
+    public MatlEnvmapRealtimeCommand? envmapRealtime;
+    public MatlZBiasCommand? zBias;
 
     [OmsiIniComments] public string? comments;
 }
@@ -674,7 +780,7 @@ public class AlphascaleCommand
     [OmsiIniComments] public string? comments;
 }
 
-[OmsiIniCommand("allcolor")]
+[OmsiIniCommand("matl_allcolor")]
 public class AllcolorCommand
 {
     public Vector4 diffuse;
@@ -836,6 +942,42 @@ public class MatlUseScriptTextureCommand
 public class MatlUseTextTextureCommand
 {
     public int index;
+
+    [OmsiIniComments] public string? comments;
+}
+
+/// <summary>
+/// The material is its own light: a greyscale mask of how much shines where, lit with the
+/// material's own colour.
+/// </summary>
+[OmsiIniCommand("matl_glow")]
+public class MatlGlowCommand
+{
+    public string path = string.Empty;
+    public float value;
+
+    [OmsiIniComments] public string? comments;
+}
+
+[OmsiIniCommand("led_glow_effect")]
+public class LedGlowEffectCommand
+{
+    /// <summary>A value out of 0..1 is taken to the nearer end by the game.</summary>
+    public float value;
+
+    [OmsiIniComments] public string? comments;
+}
+
+[OmsiIniCommand("matl_envmaprealtime")]
+public class MatlEnvmapRealtimeCommand
+{
+    [OmsiIniComments] public string? comments;
+}
+
+[OmsiIniCommand("matl_zbias")]
+public class MatlZBiasCommand
+{
+    public int zBias;
 
     [OmsiIniComments] public string? comments;
 }

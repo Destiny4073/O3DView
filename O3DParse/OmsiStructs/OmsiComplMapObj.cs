@@ -167,7 +167,11 @@ public class OmsiRenderTypeSerializer : IOmsiIniCommandCustomSerializer
         Span<char> line = stackalloc char[256];
         var read = reader.ReadLine(line);
         if (read < 0)
-            throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+        {
+            // A file cut off after [rendertype] reads the default, as OMSI does
+            target = renderType;
+            return;
+        }
         if (read > line.Length)
             throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a {targetType.Name}! Line was too long to be parsed.", null, null, lineNumber);
         line = line[..read];
@@ -439,14 +443,114 @@ public class SurfaceCommmand
 #endregion
 
 [OmsiIniCommand("new_attachment")]
+[OmsiIniCommandSerializer<OmsiAttachmentSerializer>]
 public class NewAttachementCommmand
 {
-    // TODO: Implement this command's sub commands
-    //  - attach_trans
-    //  - attach_rot_x
-    //  - attach_rot_y
-    //  - attach_rot_z
+    /// <summary>
+    /// The attachment's operations, in file order (attach_trans, attach_rot_x/y/z).
+    /// </summary>
+    public AttachmentOp[]? ops;
+
     [OmsiIniComments] public string? comments;
+}
+
+/// <summary>
+/// Deserializer for the attachment block: <c>attach_trans</c> and <c>attach_rot_x/y/z</c>
+/// lines in file order, up to the next command. Any other line is skipped as a comment.
+/// </summary>
+public class OmsiAttachmentSerializer : IOmsiIniCommandCustomSerializer
+{
+    public void Deserialize(ref object target, Type targetType, string command, IniFileReader reader, ref int lineNumber, object? parent)
+    {
+        if (target is not NewAttachementCommmand dst)
+            return;
+
+        Span<char> line = stackalloc char[256];
+        List<AttachmentOp> ops = [];
+        while (reader.Peek() is int next && next >= 0 && next != '[')
+        {
+            var read = reader.ReadLine(line);
+            if (read < 0)
+                break;
+            if (read > line.Length)
+                throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as an attachment op! Line was too long to be parsed.", null, null, lineNumber);
+            lineNumber++;
+            ReadOnlySpan<char> l = line[..read];
+
+            if (l.SequenceEqual("attach_trans"))
+            {
+                float x = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber);
+                float y = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber);
+                float z = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber);
+                ops.Add(new AttachmentOp("attach_trans", x, y, z));
+            }
+            else if (l.SequenceEqual("attach_rot_x"))
+                ops.Add(new AttachmentOp("attach_rot_x", IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber), 0, 0));
+            else if (l.SequenceEqual("attach_rot_y"))
+                ops.Add(new AttachmentOp("attach_rot_y", 0, IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber), 0));
+            else if (l.SequenceEqual("attach_rot_z"))
+                ops.Add(new AttachmentOp("attach_rot_z", 0, 0, IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber)));
+            // Any other line is a comment
+        }
+        dst.ops = ops.ToArray();
+    }
+
+    public void Serialize(object? obj, Type objType, string? commandName, TextWriter writer, object? parent)
+    {
+        if (obj is not NewAttachementCommmand attachment)
+            return;
+
+        if (commandName != null)
+            writer.WriteLine(commandName);
+        if (attachment.ops == null)
+            return;
+
+        foreach (var op in attachment.ops)
+        {
+            switch (op.op)
+            {
+                case "attach_trans":
+                    writer.WriteLine("attach_trans");
+                    writer.WriteLine(op.x);
+                    writer.WriteLine(op.y);
+                    writer.WriteLine(op.z);
+                    break;
+                case "attach_rot_x":
+                    writer.WriteLine("attach_rot_x");
+                    writer.WriteLine(op.x);
+                    break;
+                case "attach_rot_y":
+                    writer.WriteLine("attach_rot_y");
+                    writer.WriteLine(op.y);
+                    break;
+                case "attach_rot_z":
+                    writer.WriteLine("attach_rot_z");
+                    writer.WriteLine(op.z);
+                    break;
+            }
+        }
+    }
+}
+
+/// <summary>
+/// A single attachment operation: a translation or a rotation around one axis.
+/// </summary>
+[Serializable]
+public struct AttachmentOp
+{
+    /// <summary>"attach_trans", "attach_rot_x", "attach_rot_y" or "attach_rot_z".</summary>
+    public string op;
+    public float x;
+    public float y;
+    public float z;
+
+    public AttachmentOp(string op, float x, float y, float z)
+    {
+        this.op = op;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 }
 
 [OmsiIniCommand("maplight")]

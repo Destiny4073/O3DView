@@ -23,6 +23,7 @@ public class OmsiRoadVehicle : OmsiComplMapObj
     public ControlCableFrontCommand[]? controlCableFronts;
     public CoupleBackCommand? coupleBack;
     public CoupleFrontCommand? coupleFront;
+    public CoupleFrontOpenForSoundCommand? coupleFrontOpenForSound;
     public CouplingFrontCharacterCommand? couplingFrontCharacter;
     public BogiesCommand? bogies;
     public SinusCommand? sinus;
@@ -71,7 +72,7 @@ public class OmsiDescriptionSerializer : IOmsiIniCommandCustomSerializer
         {
             var read = reader.ReadLine(line);
             if (read < 0)
-                throw new OmsiIniSerializationException($"Reached the end of the file unexpectedly!", null, null, lineNumber);
+                break; // A description that runs to the end of the file just ends there
             if (read > line.Length)
             {
                 sb.Append(line);
@@ -416,6 +417,7 @@ public struct AiDeltaHeightCommand
 /// Creates a new axle.
 /// </summary>
 [OmsiIniCommand("newachse")]
+[OmsiIniCommandSerializer<OmsiAchseSerializer>]
 public struct AchseCommand
 {
     public AchseLongCommand? longitude;
@@ -429,6 +431,77 @@ public struct AchseCommand
     public AchseInertiaInvCommand? inertiaInv;
 
     [OmsiIniComments] public string? comments;
+}
+
+/// <summary>
+/// Deserializer for the axle block, which comes in two forms: the keyword form
+/// (<c>achse_long</c>, <c>achse_feder</c>, ...), which the generic parser handles, and the
+/// legacy positional form of nine bare number lines that stock AI cars use.
+/// </summary>
+public class OmsiAchseSerializer : IOmsiIniCommandCustomSerializer
+{
+    public void Deserialize(ref object target, Type targetType, string command, IniFileReader reader, ref int lineNumber, object? parent)
+    {
+        // If the next line opens a keyword (an achse_* line or the next block), the generic
+        // parser takes over: read nothing and let it match the verbatim child commands. The
+        // legacy positional form is only recognized when the first line reads as a number.
+        int next = reader.Peek();
+        bool positional = next is >= '0' and <= '9' or '-' or '+' or '.';
+        if (!positional)
+            return;
+
+        // Legacy positional form: long, max_width, min_width, wheel_diameter, spring,
+        // max_force, damper, driven, inertia_inv
+        AchseCommand dst = default;
+        dst.longitude = new() { pos = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        dst.maxWidth = new() { width = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        dst.minWidth = new() { width = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        dst.raddurMesser = new() { diameter = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        dst.feder = new() { springConst = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        dst.maxForce = new() { load = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        dst.daempfer = new() { damping = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        dst.antrieb = new() { driven = ReadDriven(reader, ref lineNumber) };
+        dst.inertiaInv = new() { inertia = IOmsiIniCommandCustomSerializer.ReadFloat(reader, ref lineNumber) };
+        target = dst;
+    }
+
+    /// <summary>Whether an axle is driven: any non-zero number (a drive share like 0.2
+    /// counts as driven) or the word "true".</summary>
+    private static bool ReadDriven(IniFileReader reader, ref int lineNumber)
+    {
+        Span<char> line = stackalloc char[256];
+        var read = reader.ReadLine(line);
+        if (read < 0)
+            return false;
+        if (read > line.Length)
+            throw new OmsiIniSerializationException($"Value of '{line}' couldn't be parsed as a bool! Line was too long to be parsed.", null, null, lineNumber);
+        line = line[..read];
+        lineNumber++;
+
+        ReadOnlySpan<char> trimmed = line.Trim();
+        if (trimmed.Equals("true", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return OmsiNumbers.ParseFloat(trimmed) != 0f;
+    }
+
+    public void Serialize(object? obj, Type objType, string? commandName, TextWriter writer, object? parent)
+    {
+        if (obj is not AchseCommand achse)
+            return;
+
+        if (commandName != null)
+            writer.WriteLine(commandName);
+
+        if (achse.longitude is { } longitude) { writer.WriteLine("achse_long"); writer.WriteLine(longitude.pos); }
+        if (achse.maxWidth is { } maxWidth) { writer.WriteLine("achse_maxwidth"); writer.WriteLine(maxWidth.width); }
+        if (achse.minWidth is { } minWidth) { writer.WriteLine("achse_minwidth"); writer.WriteLine(minWidth.width); }
+        if (achse.raddurMesser is { } raddurMesser) { writer.WriteLine("achse_raddurchmesser"); writer.WriteLine(raddurMesser.diameter); }
+        if (achse.feder is { } feder) { writer.WriteLine("achse_feder"); writer.WriteLine(feder.springConst); }
+        if (achse.maxForce is { } maxForce) { writer.WriteLine("achse_maxforce"); writer.WriteLine(maxForce.load); }
+        if (achse.daempfer is { } daempfer) { writer.WriteLine("achse_daempfer"); writer.WriteLine(daempfer.damping); }
+        if (achse.antrieb is { } antrieb) { writer.WriteLine("achse_antrieb"); writer.WriteLine(antrieb.driven ? 1 : 0); }
+        if (achse.inertiaInv is { } inertiaInv) { writer.WriteLine("achse_inertia_inv"); writer.WriteLine(inertiaInv.inertia); }
+    }
 }
 
 /// <summary>
@@ -560,12 +633,23 @@ public struct RegistrationAutomaticCommand
 public struct RegistrationListCommand
 {
     public string path;
+    public string registrationPrefix;
+    public string registrationPostfix;
 
     [OmsiIniComments] public string? comments;
 }
 
 [OmsiIniCommand("registration_free")]
 public struct RegistrationFreeCommand
+{
+    [OmsiIniComments] public string? comments;
+}
+
+/// <summary>
+/// Marks the front coupling as open for sound purposes.
+/// </summary>
+[OmsiIniCommand("couple_front_open_for_sound")]
+public struct CoupleFrontOpenForSoundCommand
 {
     [OmsiIniComments] public string? comments;
 }

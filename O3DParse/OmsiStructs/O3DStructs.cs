@@ -32,7 +32,12 @@ public struct O3DFile
         triangles = [];
         materials = [];
         bones = [];
-        transform = new O3DTransform();
+        // A file without a transform section carries no transform: identity, not zero
+        transform = new O3DTransform(
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1);
     }
 
     /// <summary>
