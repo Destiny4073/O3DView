@@ -22,3 +22,19 @@ jobs:
 
       - name: Build (Release)
         run: dotnet build O3DView.sln -c Release --no-restore --nologo
+
+      - name: Upload viewer build (Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: O3DView-windows
+          path: O3DView/bin/Release/net8.0-windows/
+          if-no-files-found: error
+
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@v4
+        with:
+          name: O3DParse-nupkg
+          path: |
+            O3DParse/bin/Release/*.nupkg
+            O3DParse/bin/Release/*.snupkg
+          if-no-files-found: warn
